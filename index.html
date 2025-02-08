@@ -13,8 +13,8 @@
     }
     #scanner-container {
       width: 100%;
-      max-width: 400px;
-      height: 300px;
+      max-width: 500px;
+      height: 350px;
       margin: 20px auto;
       border: 2px solid #ccc;
       position: relative;
@@ -52,9 +52,12 @@
           type: "LiveStream",
           target: document.querySelector('#scanner-container'),
           constraints: {
-            width: 640,  // 指定相機解析度，提升相容性
-            height: 480,
-            facingMode: "environment" // 使用後置相機（如果有）
+            width: 1280,   // 提升解析度，提高辨識率
+            height: 720,
+            facingMode: "environment", // 優先使用後置相機
+            aspectRatio: { min: 1, max: 2 }, // 限制比例，確保條碼能被識別
+            focusMode: "continuous", // 自動對焦
+            zoom: 1 // 設置適當縮放
           }
         },
         decoder: {
@@ -67,11 +70,14 @@
             "code_93_reader"
           ]
         },
-        locate: true,  // 啟用條碼定位，提高準確性
+        locate: true,
         locator: {
-          patchSize: "medium", // 提高條碼檢測精度
-          halfSample: true
-        }
+          patchSize: "large", // 提升條碼辨識率
+          halfSample: false
+        },
+        numOfWorkers: navigator.hardwareConcurrency || 4, // 使用多線程，提高效能
+        frequency: 10, // 降低掃描頻率，避免錯誤識別
+        debug: true // 開啟除錯模式 (開發測試時可用)
       }, function(err) {
         if (err) {
           console.error("初始化錯誤", err);
