@@ -54,7 +54,7 @@
           constraints: {
             width: 1280,
             height: 720,
-            facingMode: "environment", // 使用後置相機
+            facingMode: "environment",
             advanced: [
               { aspectRatio: { min: 1, max: 2 } },
               { focusMode: "continuous" }, 
@@ -100,32 +100,39 @@
     }
 
     function handleBarcodeDetection(result) {
-      Quagga.offDetected(); // 先暫停偵測，避免短時間內多次觸發
+      Quagga.offDetected();
       const barcode = result.codeResult.code;
       document.getElementById('barcode-display').textContent = `掃描結果: ${barcode}`;
 
       if (barcode.startsWith("IC")) {
         console.log(`符合條件的條碼: ${barcode}`);
-        saveBarcode(barcode);
+        saveBarcodeToFile(barcode);
+        sendBarcodeToServer(barcode); // 若有後端，則送到伺服器存檔
         Quagga.stop();
         scannerActive = false;
       } else {
         console.log(`無效條碼: ${barcode}`);
-        setTimeout(() => Quagga.onDetected(handleBarcodeDetection), 1000); // 1 秒後重新啟用偵測
+        setTimeout(() => Quagga.onDetected(handleBarcodeDetection), 1000);
       }
     }
 
-    function saveBarcode(barcode) {
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(barcode).then(() => {
-          alert(`條碼已複製: ${barcode}`);
-        }).catch(err => {
-          console.error("複製失敗", err);
-        });
-      } else {
-        alert(`請手動記錄條碼: ${barcode}`);
-      }
+    // **方式 1：存檔到手機或電腦（下載 xxx.txt）**
+    function saveBarcodeToFile(barcode) {
+      const filename = barcodescan.txt";
+      const content = barcode;
+      const blob = new Blob([content], { type: "text/plain" });
+      const link = document.createElement("a");
+
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      alert(`條碼已儲存為 ${filename}`);
     }
+
+
   </script>
 </body>
 </html>
