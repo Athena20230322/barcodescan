@@ -107,7 +107,6 @@
       if (barcode.startsWith("IC")) {
         console.log(`符合條件的條碼: ${barcode}`);
         saveBarcodeToFile(barcode);
-        sendBarcodeToServer(barcode); // 若有後端，則送到伺服器存檔
         Quagga.stop();
         scannerActive = false;
       } else {
@@ -116,9 +115,9 @@
       }
     }
 
-    // **方式 1：存檔到手機或電腦（下載 xxx.txt）**
+    // **方式 1：存檔到手機或電腦（下載 barcodescan.txt）**
     function saveBarcodeToFile(barcode) {
-      const filename = barcodescan.txt";
+      const filename = "barcodescan.txt"; // 修正錯誤的變數名稱
       const content = barcode;
       const blob = new Blob([content], { type: "text/plain" });
       const link = document.createElement("a");
@@ -126,13 +125,14 @@
       link.href = URL.createObjectURL(blob);
       link.download = filename;
       document.body.appendChild(link);
+
+      // 模擬點擊下載
       link.click();
+
+      // 移除連結
       document.body.removeChild(link);
-      
       alert(`條碼已儲存為 ${filename}`);
     }
-
-
   </script>
 </body>
 </html>
