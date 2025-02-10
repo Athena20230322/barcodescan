@@ -13,8 +13,8 @@
     }
     #scanner-container {
       width: 100%;
-      max-width: 400px;
-      height: 300px;
+      max-width: 500px;
+      height: 350px;
       margin: 20px auto;
       border: 2px solid #ccc;
       position: relative;
@@ -52,9 +52,14 @@
           type: "LiveStream",
           target: document.querySelector('#scanner-container'),
           constraints: {
-            width: 640,  // 指定相機解析度，提升相容性
-            height: 480,
-            facingMode: "environment" // 使用後置相機（如果有）
+            width: 1280,
+            height: 720,
+            facingMode: "environment", // 使用後置相機
+            advanced: [
+              { aspectRatio: { min: 1, max: 2 } },
+              { focusMode: "continuous" }, 
+              { zoom: 1 }
+            ]
           }
         },
         decoder: {
@@ -67,11 +72,14 @@
             "code_93_reader"
           ]
         },
-        locate: true,  // 啟用條碼定位，提高準確性
+        locate: true,
         locator: {
-          patchSize: "medium", // 提高條碼檢測精度
-          halfSample: true
-        }
+          patchSize: "medium",
+          halfSample: false
+        },
+        numOfWorkers: navigator.hardwareConcurrency || 4,
+        frequency: 10,
+        debug: true
       }, function(err) {
         if (err) {
           console.error("初始化錯誤", err);
@@ -88,34 +96,35 @@
         }
       });
 
-      Quagga.onDetected(function(result) {
-        const barcode = result.codeResult.code;
-        document.getElementById('barcode-display').textContent = `掃描結果: ${barcode}`;
-
-        if (barcode.startsWith("IC")) {
-          console.log(`符合條件的條碼: ${barcode}`);
-          saveBarcodeToFile(barcode);
-          Quagga.stop();
-          scannerActive = false;
-        } else {
-          console.log(`無效條碼: ${barcode}`);
-        }
-      });
+      Quagga.onDetected(handleBarcodeDetection);
     }
 
-    function saveBarcodeToFile(barcode) {
-      const filename = `barcodescan.txt`;
-      const content = barcode;
-      const blob = new Blob([content], { type: "text/plain" });
-      const link = document.createElement("a");
+    function handleBarcodeDetection(result) {
+      Quagga.offDetected(); // 先暫停偵測，避免短時間內多次觸發
+      const barcode = result.codeResult.code;
+      document.getElementById('barcode-display').textContent = `掃描結果: ${barcode}`;
 
-      link.href = URL.createObjectURL(blob);
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      alert(`條碼已儲存: ${filename}`);
-	  
+      if (barcode.startsWith("IC")) {
+        console.log(`符合條件的條碼: ${barcode}`);
+        saveBarcode(barcode);
+        Quagga.stop();
+        scannerActive = false;
+      } else {
+        console.log(`無效條碼: ${barcode}`);
+        setTimeout(() => Quagga.onDetected(handleBarcodeDetection), 1000); // 1 秒後重新啟用偵測
+      }
+    }
+
+    function saveBarcode(barcode) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(barcode).then(() => {
+          alert(`條碼已複製: ${barcode}`);
+        }).catch(err => {
+          console.error("複製失敗", err);
+        });
+      } else {
+        alert(`請手動記錄條碼: ${barcode}`);
+      }
     }
   </script>
 </body>
