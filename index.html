@@ -36,11 +36,13 @@
 
   <h2>條碼掃描器</h2>
   <button onclick="startBarcodeScanner()">開始掃描</button>
+  <button onclick="clearBarcodeHistory()">清除紀錄</button>
   <div id="scanner-container"></div>
   <div id="barcode-display">尚未掃描條碼</div>
 
   <script>
     let scannerActive = false;
+    let barcodeList = [];
 
     function startBarcodeScanner() {
       if (scannerActive) return;
@@ -106,32 +108,32 @@
 
       if (barcode.startsWith("IC")) {
         console.log(`符合條件的條碼: ${barcode}`);
-        saveBarcodeToFile(barcode);
-        Quagga.stop();
-        scannerActive = false;
+        barcodeList.push(barcode);
+        saveBarcodeToFile();
+        setTimeout(() => Quagga.onDetected(handleBarcodeDetection), 1000);
       } else {
         console.log(`無效條碼: ${barcode}`);
         setTimeout(() => Quagga.onDetected(handleBarcodeDetection), 1000);
       }
     }
 
-    // **方式 1：存檔到手機或電腦（下載 barcodescan.txt）**
-    function saveBarcodeToFile(barcode) {
-      const filename = "barcodescan.txt"; // 修正錯誤的變數名稱
-      const content = barcode;
+    function saveBarcodeToFile() {
+      const filename = "barcodescan.txt";
+      const content = barcodeList.join("\n");
       const blob = new Blob([content], { type: "text/plain" });
       const link = document.createElement("a");
-
+      
       link.href = URL.createObjectURL(blob);
       link.download = filename;
       document.body.appendChild(link);
-
-      // 模擬點擊下載
       link.click();
-
-      // 移除連結
       document.body.removeChild(link);
-      alert(`條碼已儲存為 ${filename}`);
+    }
+
+    function clearBarcodeHistory() {
+      barcodeList = [];
+      document.getElementById('barcode-display').textContent = "條碼紀錄已清除";
+      alert("條碼紀錄已清除");
     }
   </script>
 </body>
