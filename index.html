@@ -11,16 +11,10 @@
       font-family: Arial, sans-serif;
       margin: 20px;
     }
-    .storage-options {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      margin: 20px;
-    }
     #scanner-container {
       width: 100%;
-      max-width: 500px;
-      height: 350px;
+      max-width: 400px;
+      height: 300px;
       margin: 20px auto;
       border: 2px solid #ccc;
       position: relative;
@@ -39,10 +33,9 @@
   </style>
 </head>
 <body>
+
   <h2>條碼掃描器</h2>
-  <div class="storage-options">
-    <button onclick="startBarcodeScanner()">開始掃描</button>
-  </div>
+  <button onclick="startBarcodeScanner()">開始掃描</button>
   <div id="scanner-container"></div>
   <div id="barcode-display">尚未掃描條碼</div>
 
@@ -59,12 +52,9 @@
           type: "LiveStream",
           target: document.querySelector('#scanner-container'),
           constraints: {
-            width: 1280,   // 提升解析度，提高辨識率
-            height: 720,
-            facingMode: "environment", // 優先使用後置相機
-            aspectRatio: { min: 1, max: 2 }, // 限制比例，確保條碼能被識別
-            focusMode: "continuous", // 自動對焦
-            zoom: 1 // 設置適當縮放
+            width: 640,  // 指定相機解析度，提升相容性
+            height: 480,
+            facingMode: "environment" // 使用後置相機（如果有）
           }
         },
         decoder: {
@@ -77,14 +67,11 @@
             "code_93_reader"
           ]
         },
-        locate: true,
+        locate: true,  // 啟用條碼定位，提高準確性
         locator: {
-          patchSize: "large", // 提升條碼辨識率
-          halfSample: false
-        },
-        numOfWorkers: navigator.hardwareConcurrency || 4, // 使用多線程，提高效能
-        frequency: 10, // 降低掃描頻率，避免錯誤識別
-        debug: false // 除錯模式關閉（除非需要測試）
+          patchSize: "medium", // 提高條碼檢測精度
+          halfSample: true
+        }
       }, function(err) {
         if (err) {
           console.error("初始化錯誤", err);
@@ -95,33 +82,40 @@
         Quagga.start();
       });
 
-      Quagga.onDetected(async function(result) {
+      Quagga.onProcessed(function(result) {
+        if (result && result.boxes) {
+          console.log("條碼檢測中...");
+        }
+      });
+
+      Quagga.onDetected(function(result) {
         const barcode = result.codeResult.code;
         document.getElementById('barcode-display').textContent = `掃描結果: ${barcode}`;
 
         if (barcode.startsWith("IC")) {
-          await sendToGoogleSheets(barcode); // 儲存到 Google Sheets
+          console.log(`符合條件的條碼: ${barcode}`);
+          saveBarcodeToFile(barcode);
           Quagga.stop();
           scannerActive = false;
+        } else {
+          console.log(`無效條碼: ${barcode}`);
         }
       });
     }
-	
 
-    async function sendToGoogleSheets(barcode) {
-      const apiUrl = 'https://script.google.com/macros/s/AKfycbzgJi2MY9Cusm_vV84r8sfUp4XeiIycP9TmAIDWgKOWEaam8l1K8KmCc_qQi6s0RulQ/exec'; // 替換為你的 Apps Script 網址
-      try {
-        let response = await fetch(apiUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ barcode: barcode })
-        });
+    function saveBarcodeToFile(barcode) {
+      const filename = `barcodescan.txt`;
+      const content = barcode;
+      const blob = new Blob([content], { type: "text/plain" });
+      const link = document.createElement("a");
 
-        let result = await response.text();
-        alert(result);
-      } catch (error) {
-        alert("儲存失敗：" + error.message);
-      }
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      alert(`條碼已儲存: ${filename}`);
+	  
     }
   </script>
 </body>
